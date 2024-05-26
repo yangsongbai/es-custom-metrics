@@ -1,0 +1,85 @@
+appender.metric_rolling.type = RollingFile
+appender.metric_rolling.name = metric_rolling
+appender.metric_rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_access_metric.json
+appender.metric_rolling.layout.type = PatternLayout
+appender.metric_rolling.layout.pattern = {\
+                "type":"metric", \
+                "timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss,SSSZ}"\
+                %varsNotEmpty{, "level":"%enc{%map{level}}{JSON}"}\
+                %varsNotEmpty{, "cluster":"%enc{%map{cluster}}{JSON}"}\
+                %varsNotEmpty{, "node.name":"%enc{%map{node.name}}{JSON}"}\
+                %varsNotEmpty{, "node.id":"%enc{%map{node.id}}{JSON}"}\
+                %varsNotEmpty{, "host.name":"%enc{%map{host.name}}{JSON}"}\
+                %varsNotEmpty{, "host.ip":"%enc{%map{host.ip}}{JSON}"}\
+                %varsNotEmpty{, "action":"%enc{%map{action}}{JSON}"}\
+                %varsNotEmpty{, "actionRequest":"%enc{%map{actionRequest}}{JSON}"}\
+                %varsNotEmpty{, "indices":"%enc{%map{indices}}{JSON}"}\
+                %varsNotEmpty{, "request.user":"%enc{%map{request.user}}{JSON}"}\
+                %varsNotEmpty{, "request.status":"%enc{%map{request.status}}{JSON}"}\
+                %varsNotEmpty{, "request.time":"%enc{%map{request.time}}{JSON}"}\
+                %varsNotEmpty{, "request.totalBytes":"%enc{%map{request.totalBytes}}{JSON}"}\
+                %varsNotEmpty{, "request.costTime":"%enc{%map{request.costTime}}{JSON}"}\
+                %varsNotEmpty{, "remote.host":"%enc{%map{remote.host}}{JSON}"}\
+                %varsNotEmpty{, "search.took":"%enc{%map{search.took}}{JSON}"}\
+                %varsNotEmpty{, "search.hits":"%enc{%map{search.hits}}{JSON}"}\
+                %varsNotEmpty{, "search.hitsLength":"%enc{%map{search.hitsLength}}{JSON}"}\
+                %varsNotEmpty{, "search.hasAggregations":"%enc{%map{search.hasAggregations}}{JSON}"}\
+                %varsNotEmpty{, "search.size":%map{search.size}}\
+                %varsNotEmpty{, "search.source":"%enc{%map{search.source}}{JSON}"}\
+                %varsNotEmpty{, "remote.transport.host":"%enc{%map{remote.transport.host}}{JSON}"}\
+                %varsNotEmpty{, "remote.rest.address":"%enc{%map{remote.rest.address}}{JSON}"}\
+                %varsNotEmpty{, "remote.rest.start":"%enc{%map{remote.rest.start}}{JSON}"}\
+                %varsNotEmpty{, "remote.rest.origin":"%enc{%map{remote.rest.origin}}{JSON}"}\
+                %varsNotEmpty{, "task.id":"%enc{%map{task.id}}{JSON}"}\
+                %varsNotEmpty{, "task.type":"%enc{%map{task.type}}{JSON}"}\
+                %varsNotEmpty{, "task.action":"%enc{%map{task.action}}{JSON}"}\
+                %varsNotEmpty{, "task.taskCost":"%enc{%map{task.taskCost}}{JSON}"}\
+                %varsNotEmpty{, "task.taskStartTime":"%enc{%map{task.taskStartTime}}{JSON}"}\
+                }%n
+appender.metric_rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_access_metric-%d{yyyy-MM-dd}.json
+appender.metric_rolling.policies.type = Policies
+appender.metric_rolling.policies.time.type = TimeBasedTriggeringPolicy
+appender.metric_rolling.policies.time.interval = 1
+appender.metric_rolling.policies.time.modulate = true
+
+logger.jpack_metric_logfile.name = com.jd.elasticsearch.jpack.access.logfile.LoggingAccessTrail
+logger.jpack_metric_logfile.level = info
+logger.jpack_metric_logfile.appenderRef.access_rolling.ref = metric_rolling
+logger.jpack_metric_logfile.additivity = false
+
+
+
+appender.search_rolling.type = RollingFile
+appender.search_rolling.name = search_rolling
+appender.search_rolling.fileName = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_access_log.json
+appender.search_rolling.layout.type = PatternLayout
+appender.search_rolling.layout.pattern = {\
+                "type":"access", \
+                "timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss,SSSZ}"\
+                %varsNotEmpty{, "level":"%enc{%map{level}}{JSON}"}\
+                %varsNotEmpty{, "cluster":"%enc{%map{cluster}}{JSON}"}\
+                %varsNotEmpty{, "node.name":"%enc{%map{node.name}}{JSON}"}\
+                %varsNotEmpty{, "node.id":"%enc{%map{node.id}}{JSON}"}\
+                %varsNotEmpty{, "host.name":"%enc{%map{host.name}}{JSON}"}\
+                %varsNotEmpty{, "host.ip":"%enc{%map{host.ip}}{JSON}"}\
+                %varsNotEmpty{, "uri":"%enc{%map{uri}}{JSON}"}\
+                %varsNotEmpty{, "path":"%enc{%map{path}}{JSON}"}\
+                %varsNotEmpty{, "source":"%enc{%map{source}}{JSON}"}\
+                %varsNotEmpty{, "request_id":"%enc{%map{request_id}}{JSON}"}\
+                %varsNotEmpty{, "method":"%enc{%map{method}}{JSON}"}\
+                %varsNotEmpty{, "ram_bytes_used":"%enc{%map{ram_bytes_used}}{JSON}"}\
+                %varsNotEmpty{, "content_length":"%enc{%map{content_length}}{JSON}"}\
+                %varsNotEmpty{, "opaque_id":"%enc{%map{opaque_id}}{JSON}"}\
+                %varsNotEmpty{, "remote.address":"%enc{%map{remote.address}}{JSON}"}\
+                %varsNotEmpty{, "user":"%enc{%map{user}}{JSON}"}\
+                }%n
+appender.search_rolling.filePattern = ${sys:es.logs.base_path}${sys:file.separator}${sys:es.logs.cluster_name}_access_log-%d{yyyy-MM-dd}.json
+appender.search_rolling.policies.type = Policies
+appender.search_rolling.policies.time.type = TimeBasedTriggeringPolicy
+appender.search_rolling.policies.time.interval = 1
+appender.search_rolling.policies.time.modulate = true
+
+logger.jpack_search_logfile.name = com.jd.elasticsearch.jpack.access.logfile.LoggingRestSearchAccessTrail
+logger.jpack_search_logfile.level = info
+logger.jpack_search_logfile.appenderRef.access_rolling.ref = search_rolling
+logger.jpack_search_logfile.additivity = false
