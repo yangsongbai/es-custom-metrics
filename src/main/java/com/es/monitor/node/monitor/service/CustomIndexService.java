@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.service;
 
+import com.es.monitor.node.monitor.metric.HistogramMetric;
 import com.es.monitor.node.monitor.stats.IndexRequestStats;
 import org.elasticsearch.common.metrics.CounterMetric;
 import org.elasticsearch.common.metrics.MeanMetric;
@@ -38,6 +39,7 @@ public class CustomIndexService implements  CustomStatsService {
             clear();
         }
         totalStats.indexMetric.inc(costTime);
+        totalStats.sucHistogram.inc(costTime);
         if (timeout == true){
             totalStats.indexTimeOut.inc();
         }
@@ -48,9 +50,10 @@ public class CustomIndexService implements  CustomStatsService {
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.indexFailed.inc();
         totalStats.indexCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
@@ -62,7 +65,11 @@ public class CustomIndexService implements  CustomStatsService {
     public void clear() {
          totalStats.clear();
     }
-
+    @Override
+    public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
+    }
 
     static class StatsHolder {
         private  MeanMetric    indexMetric = new MeanMetric();
@@ -71,18 +78,23 @@ public class CustomIndexService implements  CustomStatsService {
         private  CounterMetric indexTimeOut = new CounterMetric();
         private  CounterMetric inAll = new CounterMetric();
 
+        private HistogramMetric sucHistogram = new HistogramMetric();
+        private HistogramMetric failHistogram = new HistogramMetric();
+
         public void clear(){
             indexMetric = new MeanMetric();
             indexCurrent = new CounterMetric();
             indexFailed = new CounterMetric();
             indexTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
 
         IndexRequestStats.Stats stats() {
             return new IndexRequestStats.Stats(inAll.count(),
                     indexMetric.count(), TimeUnit.MILLISECONDS.toMillis(indexMetric.sum()),
-                    indexCurrent.count(),indexFailed.count(),indexTimeOut.count());
+                    indexCurrent.count(),indexFailed.count(),indexTimeOut.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.stats;
 
+import com.es.monitor.node.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -37,8 +38,15 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
         private long indexTimeOutCount;
         private long indexFailedCount;
         private long inAll;
+        private HistogramStats sucHistogramStats;
 
-        Stats() {}
+        private HistogramStats failHistogramStats;
+
+        Stats() {
+            sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
+        }
+
 
         public Stats(StreamInput in) throws IOException {
             indexCount = in.readVLong();
@@ -47,15 +55,19 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
             indexTimeOutCount = in.readVLong();
             indexFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long indexCount, long indexTimeInMillis, long indexCurrent, long indexTimeOutCount, long searchFailedCount) {
+        public Stats(long inAll, long indexCount, long indexTimeInMillis, long indexCurrent, long indexTimeOutCount, long searchFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.indexCount = indexCount;
             this.indexTimeInMillis = indexTimeInMillis;
             this.indexCurrent = indexCurrent;
             this.indexTimeOutCount = indexTimeOutCount;
             this.indexFailedCount = searchFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
 
         public void add(Stats stats) {
@@ -65,6 +77,8 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
             this.indexTimeOutCount += stats.indexTimeOutCount;
             this.indexFailedCount += stats.indexFailedCount;
             this.inAll = stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -81,6 +95,8 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
             indexTimeOutCount = in.readVLong();
             indexFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
         @Override
         public void writeTo(StreamOutput out) throws IOException {
@@ -90,31 +106,27 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
             out.writeVLong(indexTimeOutCount);
             out.writeVLong(indexFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.INDEX_TOTAL, indexCount);
-            builder.humanReadableField(Fields.INDEX_TIME_IN_MILLIS, Fields.INDEX_TIME, getTime());
-            builder.field(Fields.INDEX_CURRENT, indexCurrent);
-            builder.field(Fields.INDEX_TIME_OUT, indexTimeOutCount);
-            builder.field(Fields.INDEX_FAILED, indexFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
+            builder.field(CommonFields.TOTAL, indexCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getTime());
+            builder.field(CommonFields.CURRENT, indexCurrent);
+            builder.field(CommonFields.TIME_OUT, indexTimeOutCount);
+            builder.field(CommonFields.FAILED, indexFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
         public TimeValue getTime() { return new TimeValue(indexTimeInMillis); }
-    }
-    static final class Fields {
-        static final String INDEX = "index";
-        static final String INDEX_TOTAL = "total";
-        static final String INDEX_TIME = "time";
-        static final String INDEX_TIME_IN_MILLIS = "time_in_millis";
-        static final String INDEX_CURRENT = "current";
-        static final String INDEX_TIME_OUT = "time_out";
-        static final String INDEX_TIME_OUT_500MS = "time_out_500ms";
-        static final String INDEX_TIME_OUT_1000MS = "time_out_1000ms";
-        static final String INDEX_FAILED = "failed";
-        static final String IN_ALL = "in_all";
     }
 
     @Override
@@ -129,7 +141,7 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.INDEX);
+        builder.startObject("index");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;

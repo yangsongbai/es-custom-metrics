@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.service;
 
+import com.es.monitor.node.monitor.metric.HistogramMetric;
 import com.es.monitor.node.monitor.stats.DeleteByQueryStats;
 import org.elasticsearch.common.metrics.CounterMetric;
 import org.elasticsearch.common.metrics.MeanMetric;
@@ -37,7 +38,8 @@ public class CustomDeleteByQueryService implements  CustomStatsService {
             clear();
         }
         totalStats.deleteByQueryMetric.inc(costTime);
-        if (timeout == true){
+        totalStats.sucHistogram.inc(costTime);
+        if (timeout){
             totalStats.deleteByQueryTimeOut.inc();
         }
         totalStats.deleteByQueryCurrent.dec();
@@ -47,9 +49,10 @@ public class CustomDeleteByQueryService implements  CustomStatsService {
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.deleteByQueryFailed.inc();
         totalStats.deleteByQueryCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
@@ -64,6 +67,8 @@ public class CustomDeleteByQueryService implements  CustomStatsService {
 
     @Override
     public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
     }
 
     static class StatsHolder {
@@ -73,18 +78,23 @@ public class CustomDeleteByQueryService implements  CustomStatsService {
         private  CounterMetric deleteByQueryTimeOut = new CounterMetric();
         private  CounterMetric inAll = new CounterMetric();
 
+        private HistogramMetric sucHistogram = new HistogramMetric();
+        private HistogramMetric failHistogram = new HistogramMetric();
+
         public void clear(){
             deleteByQueryMetric = new MeanMetric();
             deleteByQueryCurrent = new CounterMetric();
             deleteByQueryFailed = new CounterMetric();
             deleteByQueryTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
 
         DeleteByQueryStats.Stats stats() {
             return new DeleteByQueryStats.Stats(inAll.count(),
                     deleteByQueryMetric.count(), TimeUnit.MILLISECONDS.toMillis(deleteByQueryMetric.sum()),
-                    deleteByQueryCurrent.count(),deleteByQueryFailed.count(),deleteByQueryTimeOut.count());
+                    deleteByQueryCurrent.count(),deleteByQueryFailed.count(), deleteByQueryTimeOut.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

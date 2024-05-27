@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.service;
 
+import com.es.monitor.node.monitor.metric.HistogramMetric;
 import com.es.monitor.node.monitor.stats.SearchStats;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +49,8 @@ public class CustomSearchService  implements ClusterStateListener, CustomStatsSe
             clear();
         }
         totalStats.searchMetric.inc(costTime);
-        if (timeout == true){
+        totalStats.sucHistogram.inc(costTime);
+        if (timeout){
             totalStats.searchTimeOut.inc();
         }
         totalStats.searchCurrent.dec();
@@ -58,9 +60,10 @@ public class CustomSearchService  implements ClusterStateListener, CustomStatsSe
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.searchFailed.inc();
         totalStats.searchCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
@@ -73,6 +76,12 @@ public class CustomSearchService  implements ClusterStateListener, CustomStatsSe
         totalStats.clear();
     }
 
+    @Override
+    public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
+    }
+
     static class StatsHolder {
         private  MeanMetric    searchMetric = new MeanMetric();
         private  CounterMetric searchCurrent = new CounterMetric();
@@ -80,17 +89,22 @@ public class CustomSearchService  implements ClusterStateListener, CustomStatsSe
         private  CounterMetric searchTimeOut = new CounterMetric();
         private  CounterMetric inAll = new CounterMetric();
 
+        private HistogramMetric sucHistogram = new HistogramMetric();
+        private HistogramMetric failHistogram = new HistogramMetric();
+
         public void clear(){
             searchMetric = new MeanMetric();
             searchCurrent = new CounterMetric();
             searchFailed = new CounterMetric();
             searchTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
         SearchStats.Stats stats() {
             return new SearchStats.Stats(inAll.count(),
                     searchMetric.count(), TimeUnit.MILLISECONDS.toMillis(searchMetric.sum()),
-                    searchCurrent.count(), searchFailed.count(),searchTimeOut.count());
+                    searchCurrent.count(), searchFailed.count(),searchTimeOut.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

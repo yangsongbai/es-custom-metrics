@@ -57,14 +57,17 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.bulkFailed.inc();
         totalStats.bulkCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
     public void fillEmptyData(){
         totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
+
     }
 
     @Override
@@ -84,7 +87,7 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
         private  CounterMetric bulkFailed = new CounterMetric();
         private  CounterMetric bulkTimeOut = new CounterMetric();
         private HistogramMetric sucHistogram = new HistogramMetric();
-
+        private HistogramMetric failHistogram = new HistogramMetric();
 
         public void clear(){
             bulkMetric = new MeanMetric();
@@ -93,12 +96,13 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
             bulkTimeOut = new CounterMetric();
             inAll = new CounterMetric();
             sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
 
         BulkStats.Stats stats() {
             return new BulkStats.Stats(inAll.count(),
                     bulkMetric.count(), TimeUnit.MILLISECONDS.toMillis(bulkMetric.sum()),
-                    bulkCurrent.count(),bulkTimeOut.count(),bulkFailed.count(), sucHistogram.getSnapshot());
+                    bulkCurrent.count(),bulkTimeOut.count(),bulkFailed.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

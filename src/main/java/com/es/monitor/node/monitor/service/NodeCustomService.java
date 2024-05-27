@@ -91,5 +91,12 @@ public class NodeCustomService  extends AbstractLifecycleComponent implements Cl
     }
     private void fillMetricData() {
         this.customBulkService.fillEmptyData();
+        this.customSearchService.fillEmptyData();
+        this.customDeleteByQueryService.fillEmptyData();
+        this.customUpdateByQueryService.fillEmptyData();
+        this.customGetService.fillEmptyData();
+        this.customMultiGetService.fillEmptyData();
+        this.customIndexService.fillEmptyData();
+        this.customMultiSearchService.fillEmptyData();
     }
 }

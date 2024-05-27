@@ -20,7 +20,7 @@ public interface CustomStatsService {
     /**
      *  请求异常结束
      */
-    void fail();
+    void fail(long start, long end);
 
     /**
      * 部分失败

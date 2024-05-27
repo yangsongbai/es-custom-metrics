@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.service;
 
+import com.es.monitor.node.monitor.metric.HistogramMetric;
 import com.es.monitor.node.monitor.stats.GetStats;
 import org.elasticsearch.common.metrics.CounterMetric;
 import org.elasticsearch.common.metrics.MeanMetric;
@@ -48,13 +49,16 @@ public class CustomGetService implements  CustomStatsService{
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.getFailed.inc();
         totalStats.getCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
     public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
     }
 
     @Override
@@ -73,19 +77,24 @@ public class CustomGetService implements  CustomStatsService{
         private  CounterMetric getFailed = new CounterMetric();
         private  CounterMetric getTimeOut = new CounterMetric();
         private  CounterMetric inAll = new CounterMetric();
+
+        private HistogramMetric sucHistogram = new HistogramMetric();
+        private HistogramMetric failHistogram = new HistogramMetric();
         public void clear(){
             getMetric = new MeanMetric();
             getCurrent = new CounterMetric();
             getFailed = new CounterMetric();
             getTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
 
 
         GetStats.Stats stats() {
             return new GetStats.Stats(inAll.count(),
                     getMetric.count(), TimeUnit.MILLISECONDS.toMillis(getMetric.sum()),
-                    getCurrent.count(),getFailed.count(),getTimeOut.count());
+                    getCurrent.count(), getFailed.count(), getTimeOut.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

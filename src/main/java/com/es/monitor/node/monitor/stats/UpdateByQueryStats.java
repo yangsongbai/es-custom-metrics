@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.stats;
 
+import com.es.monitor.node.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -9,12 +10,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 20:06
- */
+
 public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
     private  Stats totalStats;
 
@@ -42,7 +38,13 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
         private long updateByQueryFailedCount;
         private long inAll;
 
-        Stats() {}
+        private HistogramStats sucHistogramStats;
+        private HistogramStats failHistogramStats;
+
+        Stats() {
+            sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
+        }
 
         public Stats(StreamInput in) throws IOException {
             updateByQueryCount = in.readVLong();
@@ -51,15 +53,19 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
             updateByQueryTimeOutCount = in.readVLong();
             updateByQueryFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long updateByQueryCount, long updateByQueryTimeInMillis, long updateByQueryCurrent, long updateByQueryTimeOutCount, long searchFailedCount) {
+        public Stats(long inAll, long updateByQueryCount, long updateByQueryTimeInMillis, long updateByQueryCurrent, long updateByQueryTimeOutCount, long searchFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.updateByQueryCount = updateByQueryCount;
             this.updateByQueryTimeInMillis = updateByQueryTimeInMillis;
             this.updateByQueryCurrent = updateByQueryCurrent;
             this.updateByQueryTimeOutCount = updateByQueryTimeOutCount;
             this.updateByQueryFailedCount = searchFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
 
         public void add(Stats stats) {
@@ -69,6 +75,8 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
             this.updateByQueryTimeOutCount += stats.updateByQueryTimeOutCount;
             this.updateByQueryFailedCount += stats.updateByQueryFailedCount;
             this.inAll += stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -85,6 +93,8 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
             updateByQueryTimeOutCount = in.readVLong();
             updateByQueryFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
         @Override
         public void writeTo(StreamOutput out) throws IOException {
@@ -94,31 +104,27 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
             out.writeVLong(updateByQueryTimeOutCount);
             out.writeVLong(updateByQueryFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.UPDATE_BY_QUERY_TOTAL, updateByQueryCount);
-            builder.humanReadableField(Fields.UPDATE_BY_QUERY_TIME_IN_MILLIS, Fields.UPDATE_BY_QUERY_TIME, getTime());
-            builder.field(Fields.UPDATE_BY_QUERY_CURRENT,updateByQueryCurrent);
-            builder.field(Fields.UPDATE_BY_QUERY_TIME_OUT, updateByQueryTimeOutCount);
-            builder.field(Fields.UPDATE_BY_QUERY_FAILED, updateByQueryFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
+            builder.field(CommonFields.TOTAL, updateByQueryCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getTime());
+            builder.field(CommonFields.CURRENT,updateByQueryCurrent);
+            builder.field(CommonFields.TIME_OUT, updateByQueryTimeOutCount);
+            builder.field(CommonFields.FAILED, updateByQueryFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
         public TimeValue getTime() { return new TimeValue(updateByQueryTimeInMillis); }
-    }
-    static final class Fields {
-        static final String UPDATE_BY_QUERY = "update_by_query";
-        static final String UPDATE_BY_QUERY_TOTAL = "total";
-        static final String UPDATE_BY_QUERY_TIME = "time";
-        static final String UPDATE_BY_QUERY_TIME_IN_MILLIS = "time_in_millis";
-        static final String UPDATE_BY_QUERY_CURRENT = "current";
-        static final String UPDATE_BY_QUERY_TIME_OUT = "time_out";
-        static final String UPDATE_BY_QUERY_TIME_OUT_500MS = "time_out_500ms";
-        static final String UPDATE_BY_QUERY_TIME_OUT_1000MS = "time_out_1000ms";
-        static final String UPDATE_BY_QUERY_FAILED = "failed";
-        static final String IN_ALL = "in_all";
     }
 
     @Override
@@ -133,7 +139,7 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.UPDATE_BY_QUERY);
+        builder.startObject("update_by_query");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;

@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.stats;
 
+import com.es.monitor.node.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -39,7 +40,14 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
         private long multiSearchFailedCount;
         private long inAll;
 
-        Stats() {}
+        private HistogramStats sucHistogramStats;
+
+        private HistogramStats failHistogramStats;
+
+        Stats() {
+            sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
+        }
 
         public Stats(StreamInput in) throws IOException {
             multiSearchCount = in.readVLong();
@@ -48,15 +56,19 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
             multiSearchTimeOutCount = in.readVLong();
             multiSearchFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long multiSearchCount, long multiSearchTimeInMillis, long multiSearchCurrent, long multiSearchTimeOutCount, long multiSearchFailedCount) {
+        public Stats(long inAll, long multiSearchCount, long multiSearchTimeInMillis, long multiSearchCurrent, long multiSearchTimeOutCount, long multiSearchFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.multiSearchCount = multiSearchCount;
             this.multiSearchTimeInMillis = multiSearchTimeInMillis;
             this.multiSearchCurrent = multiSearchCurrent;
             this.multiSearchTimeOutCount = multiSearchTimeOutCount;
             this.multiSearchFailedCount = multiSearchFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
 
         public void add(Stats stats) {
@@ -66,6 +78,8 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
             this.multiSearchTimeOutCount += stats.multiSearchTimeOutCount;
             this.multiSearchFailedCount += stats.multiSearchFailedCount;
             this.inAll += stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -82,6 +96,8 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
             multiSearchTimeOutCount = in.readVLong();
             multiSearchFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
 
         @Override
@@ -92,31 +108,27 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
             out.writeVLong(multiSearchTimeOutCount);
             out.writeVLong(multiSearchFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.MSEARCH_TOTAL,multiSearchCount);
-            builder.humanReadableField(Fields.MSEARCH_TIME_IN_MILLIS, Fields.MSEARCH_TIME, getTime());
-            builder.field(Fields.MSEARCH_CURRENT, multiSearchCurrent);
-            builder.field(Fields.MSEARCH_TIME_OUT, multiSearchTimeOutCount);
-            builder.field(Fields.MSEARCH_FAILED, multiSearchFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
+            builder.field(CommonFields.TOTAL,multiSearchCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getTime());
+            builder.field(CommonFields.CURRENT, multiSearchCurrent);
+            builder.field(CommonFields.TIME_OUT, multiSearchTimeOutCount);
+            builder.field(CommonFields.FAILED, multiSearchFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
         public TimeValue getTime() { return new TimeValue(multiSearchTimeInMillis); }
-    }
-    static final class Fields {
-        static final String MSEARCH = "msearch";
-        static final String MSEARCH_TOTAL = "total";
-        static final String MSEARCH_TIME = "time";
-        static final String MSEARCH_TIME_IN_MILLIS = "time_in_millis";
-        static final String MSEARCH_CURRENT = "current";
-        static final String MSEARCH_TIME_OUT = "time_out";
-        static final String MSEARCH_TIME_OUT_500MS = "time_out_500ms";
-        static final String MSEARCH_TIME_OUT_1000MS = "time_out_1000ms";
-        static final String MSEARCH_FAILED = "failed";
-        static final String IN_ALL = "in_all";
     }
 
     @Override
@@ -131,7 +143,7 @@ public class MultiSearchStats  implements Streamable, ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
-        builder.startObject(Fields.MSEARCH);
+        builder.startObject("msearch");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;

@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * Created by
  *
- * @Author : yangsongbai1
+ * @Author : yangsongbai
  * @create 2022/11/28 14:52
  */
 public class NodeCustomIndicesStats  implements Writeable, ToXContentFragment  {
@@ -75,7 +75,7 @@ public class NodeCustomIndicesStats  implements Writeable, ToXContentFragment  {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.INDICES);
+        builder.startObject("indices");
         stats.toXContent(builder, params);
         builder.endObject();
         return builder;
@@ -84,8 +84,5 @@ public class NodeCustomIndicesStats  implements Writeable, ToXContentFragment  {
     public void add(NodeCustomIndicesStats indices) {
         this.stats.add(indices.stats);
     }
-
-    static final class Fields {
-        static final String INDICES = "indices";
-    }
+    
 }

@@ -48,8 +48,11 @@ public class BulkStats implements Streamable,ToXContentFragment {
         private long inAll;
 
        private HistogramStats sucHistogramStats;
+       private HistogramStats failHistogramStats;
+
         Stats() {
             sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
         }
 
         public Stats(StreamInput in) throws IOException {
@@ -60,9 +63,10 @@ public class BulkStats implements Streamable,ToXContentFragment {
             bulkFailedCount = in.readVLong();
             inAll = in.readVLong();
             sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long bulkCount, long bulkTimeInMillis, long bulkCurrent, long bulkTimeOutCount, long bulkFailedCount, HistogramMetricSnapshot snapshot) {
+        public Stats(long inAll, long bulkCount, long bulkTimeInMillis, long bulkCurrent, long bulkTimeOutCount, long bulkFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.bulkCount = bulkCount;
             this.bulkTimeInMillis = bulkTimeInMillis;
             this.bulkCurrent = bulkCurrent;
@@ -70,6 +74,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             this.bulkFailedCount = bulkFailedCount;
             this.inAll = inAll;
             this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -86,6 +91,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             this.bulkFailedCount += stats.bulkFailedCount;
             this.inAll += stats.inAll;
             this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
         @Override
@@ -97,6 +103,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             bulkFailedCount = in.readVLong();
             inAll = in.readVLong();
             sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
 
         @Override
@@ -108,18 +115,22 @@ public class BulkStats implements Streamable,ToXContentFragment {
             out.writeVLong(bulkFailedCount);
             out.writeVLong(inAll);
             sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.BULK_TOTAL, bulkCount);
-            builder.humanReadableField(Fields.BULK_TIME_IN_MILLIS, Fields.BULK_TIME, getTime());
-            builder.field(Fields.BULK_CURRENT, bulkCurrent);
-            builder.field(Fields.BULK_TIME_OUT, bulkTimeOutCount);
-            builder.field(Fields.BULK_FAILED, bulkFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
-            builder.startObject(Fields.SUC_LATENCY);
+            builder.field(CommonFields.TOTAL, bulkCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getTime());
+            builder.field(CommonFields.CURRENT, bulkCurrent);
+            builder.field(CommonFields.TIME_OUT, bulkTimeOutCount);
+            builder.field(CommonFields.FAILED, bulkFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
             sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
             builder.endObject();
             return builder;
         }
@@ -140,18 +151,6 @@ public class BulkStats implements Streamable,ToXContentFragment {
         public TimeValue getTime() { return new TimeValue(bulkTimeInMillis); }
 
     }
-    static final class Fields {
-        static final String BULK = "bulk";
-        static final String BULK_TOTAL = "total";
-        static final String BULK_TIME = "time";
-        static final String BULK_TIME_IN_MILLIS = "time_in_millis";
-        static final String BULK_CURRENT = "current";
-        static final String BULK_TIME_OUT = "time_out";
-        static final String BULK_FAILED = "failed";
-        static final String BULK_PART_FAILED = "part_failed";
-        static final String IN_ALL = "in_all";
-        static final String SUC_LATENCY = "suc_latency";
-    }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
@@ -165,7 +164,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.BULK);
+        builder.startObject("bulk");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;

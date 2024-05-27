@@ -74,9 +74,9 @@ public abstract class BaseHandler<Request extends ActionRequest, Response extend
                 listener.onFailure(e);
                 try{
                     if (customStatsService != null) {
-                        customStatsService.fail();
+                        customStatsService.fail(start, System.currentTimeMillis());
                     }
-                    fail(request, e, start, System.currentTimeMillis(),task, remoteInfo);
+                    fail(request, e, start, System.currentTimeMillis(), task, remoteInfo);
                     logger.debug("request failed : {}. error:[{}]", request, e.getMessage());
                 }catch (Exception ex){
                     logger.error(ex);

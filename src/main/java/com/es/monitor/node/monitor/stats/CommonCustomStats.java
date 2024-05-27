@@ -13,12 +13,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/28 14:56
- */
 public class CommonCustomStats implements Writeable, ToXContentFragment {
     @Nullable
     private BulkStats bulkStats;

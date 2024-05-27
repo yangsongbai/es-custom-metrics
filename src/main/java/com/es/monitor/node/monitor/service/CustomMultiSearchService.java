@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.service;
 
+import com.es.monitor.node.monitor.metric.HistogramMetric;
 import com.es.monitor.node.monitor.stats.MultiSearchStats;
 import org.elasticsearch.common.metrics.CounterMetric;
 import org.elasticsearch.common.metrics.MeanMetric;
@@ -38,7 +39,8 @@ public class CustomMultiSearchService  implements  CustomStatsService {
             clear();
         }
         totalStats.multiSearchMetric.inc(costTime);
-        if (timeout == true){
+        totalStats.sucHistogram.inc(costTime);
+        if (timeout){
             totalStats.multiSearchTimeOut.inc();
         }
         totalStats.multiSearchCurrent.dec();
@@ -48,9 +50,10 @@ public class CustomMultiSearchService  implements  CustomStatsService {
      *  请求异常结束
      */
     @Override
-    public void fail(){
+    public void fail(long start, long end){
         totalStats.multiSearchFailed.inc();
         totalStats.multiSearchCurrent.dec();
+        totalStats.failHistogram.inc(end - start);
     }
 
     @Override
@@ -65,6 +68,8 @@ public class CustomMultiSearchService  implements  CustomStatsService {
 
     @Override
     public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
+        totalStats.failHistogram.fillEmptyData();
     }
 
     static class StatsHolder {
@@ -74,18 +79,23 @@ public class CustomMultiSearchService  implements  CustomStatsService {
         private  CounterMetric multiSearchTimeOut = new CounterMetric();
         private  CounterMetric inAll = new CounterMetric();
 
+        private HistogramMetric sucHistogram = new HistogramMetric();
+        private HistogramMetric failHistogram = new HistogramMetric();
+
         public void clear(){
             multiSearchMetric = new MeanMetric();
             multiSearchCurrent = new CounterMetric();
             multiSearchFailed = new CounterMetric();
             multiSearchTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
+            failHistogram = new HistogramMetric();
         }
 
         MultiSearchStats.Stats stats() {
             return new MultiSearchStats.Stats(inAll.count(),
                     multiSearchMetric.count(), TimeUnit.MILLISECONDS.toMillis(multiSearchMetric.sum()),
-                    multiSearchCurrent.count(),multiSearchFailed.count(),multiSearchTimeOut.count());
+                    multiSearchCurrent.count(), multiSearchFailed.count(), multiSearchTimeOut.count(), sucHistogram.getSnapshot(), failHistogram.getSnapshot());
         }
     }
 }

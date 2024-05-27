@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.stats;
 
+import com.es.monitor.node.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -9,12 +10,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 19:56
- */
 public class DeleteByQueryStats implements Streamable, ToXContentFragment {
     private  Stats totalStats;
 
@@ -43,7 +38,7 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.DELETE_BY_QUERY);
+        builder.startObject("delete_by_query");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;
@@ -69,7 +64,11 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
         private long deleteByQueryFailedCount;
         private long inAll;
 
+        private HistogramStats sucHistogramStats;
+        private HistogramStats failHistogramStats;
         Stats() {
+            sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
         }
 
         public Stats(StreamInput in) throws IOException {
@@ -79,18 +78,20 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
             deleteByQueryTimeOutCount = in.readVLong();
             deleteByQueryFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long deleteByQueryCount, long deleteByQueryTimeInMillis, long deleteByQueryCurrent, long deleteByQueryTimeOutCount, long searchFailedCount) {
+        public Stats(long inAll, long deleteByQueryCount, long deleteByQueryTimeInMillis, long deleteByQueryCurrent, long deleteByQueryTimeOutCount, long searchFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.deleteByQueryCount = deleteByQueryCount;
             this.deleteByQueryTimeInMillis = deleteByQueryTimeInMillis;
             this.deleteByQueryCurrent = deleteByQueryCurrent;
             this.deleteByQueryTimeOutCount = deleteByQueryTimeOutCount;
             this.deleteByQueryFailedCount = searchFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
-
-
 
         public void add(Stats stats) {
             this.deleteByQueryCount += stats.deleteByQueryCount;
@@ -99,6 +100,8 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
             this.deleteByQueryTimeOutCount += stats.deleteByQueryTimeOutCount;
             this.deleteByQueryFailedCount += stats.deleteByQueryFailedCount;
             this.inAll += stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -115,6 +118,8 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
             deleteByQueryTimeOutCount = in.readVLong();
             deleteByQueryFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
 
         @Override
@@ -125,32 +130,29 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
             out.writeVLong(deleteByQueryTimeOutCount);
             out.writeVLong(deleteByQueryFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.DELETE_BY_QUERY_TOTAL, deleteByQueryCount);
-            builder.humanReadableField(Fields.DELETE_BY_QUERY_TIME_IN_MILLIS, Fields.DELETE_BY_QUERY_TIME, getTime());
-            builder.field(Fields.DELETE_BY_QUERY_CURRENT, deleteByQueryCurrent);
-            builder.field(Fields.DELETE_BY_QUERY_TIME_OUT, deleteByQueryTimeOutCount);
-            builder.field(Fields.DELETE_BY_QUERY_FAILED, deleteByQueryFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
+            builder.field(CommonFields.TOTAL, deleteByQueryCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getTime());
+            builder.field(CommonFields.CURRENT, deleteByQueryCurrent);
+            builder.field(CommonFields.TIME_OUT, deleteByQueryTimeOutCount);
+            builder.field(CommonFields.FAILED, deleteByQueryFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
 
         public TimeValue getTime() {
             return new TimeValue(deleteByQueryTimeInMillis);
         }
-    }
-
-    static final class Fields {
-        static final String DELETE_BY_QUERY = "delete_by_query";
-        static final String DELETE_BY_QUERY_TOTAL = "total";
-        static final String DELETE_BY_QUERY_TIME = "time";
-        static final String DELETE_BY_QUERY_TIME_IN_MILLIS = "time_in_millis";
-        static final String DELETE_BY_QUERY_CURRENT = "current";
-        static final String DELETE_BY_QUERY_TIME_OUT = "time_out";
-        static final String DELETE_BY_QUERY_FAILED = "failed";
-        static final String IN_ALL = "in_all";
     }
 }

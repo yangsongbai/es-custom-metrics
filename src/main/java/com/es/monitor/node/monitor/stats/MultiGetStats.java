@@ -1,5 +1,6 @@
 package com.es.monitor.node.monitor.stats;
 
+import com.es.monitor.node.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
@@ -33,7 +34,13 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
         private long mGetFailedCount;
         private long inAll;
 
-        Stats() {}
+        private HistogramStats sucHistogramStats;
+        private HistogramStats failHistogramStats;
+
+        Stats() {
+            sucHistogramStats = new HistogramStats();
+            failHistogramStats = new HistogramStats();
+        }
 
         public Stats(StreamInput in) throws IOException {
             mGetCount = in.readVLong();
@@ -42,15 +49,19 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             mGetTimeOutCount = in.readVLong();
             mGetFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
+            failHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long mGetCount, long mGetTimeInMillis, long mGetCurrent, long mGetTimeOutCount, long mGetFailedCount) {
+        public Stats(long inAll, long mGetCount, long mGetTimeInMillis, long mGetCurrent, long mGetTimeOutCount, long mGetFailedCount, HistogramMetricSnapshot snapshot, HistogramMetricSnapshot fail) {
             this.mGetCount = mGetCount;
             this.mGetTimeInMillis = mGetTimeInMillis;
             this.mGetCurrent = mGetCurrent;
             this.mGetTimeOutCount = mGetTimeOutCount;
             this.mGetFailedCount = mGetFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
+            this.failHistogramStats = new HistogramStats(fail);
         }
 
         public void add(Stats stats) {
@@ -60,6 +71,8 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             this.mGetTimeOutCount += stats.mGetTimeOutCount;
             this.mGetFailedCount += stats.mGetFailedCount;
             this.inAll += stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
+            this.failHistogramStats.add(stats.failHistogramStats);
         }
 
 
@@ -77,6 +90,8 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             mGetTimeOutCount = in.readVLong();
             mGetFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
+            failHistogramStats = HistogramStats.readStats(in);
         }
 
         @Override
@@ -87,16 +102,24 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             out.writeVLong(mGetTimeOutCount);
             out.writeVLong(mGetFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
+            failHistogramStats.writeTo(out);
         }
 
         @Override
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-            builder.field(Fields.MGET_TOTAL, mGetCount);
-            builder.humanReadableField(Fields.MGET_TIME_IN_MILLIS, Fields.MGET_TIME, getGetTime());
-            builder.field(Fields.MGET_CURRENT, mGetCurrent);
-            builder.field(Fields.MGET_TIME_OUT, mGetTimeOutCount);
-            builder.field(Fields.MGET_FAILED, mGetFailedCount);
-            builder.field(Fields.IN_ALL, inAll);
+            builder.field(CommonFields.TOTAL, mGetCount);
+            builder.humanReadableField(CommonFields.TIME_IN_MILLIS, CommonFields.TIME, getGetTime());
+            builder.field(CommonFields.CURRENT, mGetCurrent);
+            builder.field(CommonFields.TIME_OUT, mGetTimeOutCount);
+            builder.field(CommonFields.FAILED, mGetFailedCount);
+            builder.field(CommonFields.IN_ALL, inAll);
+            builder.startObject(CommonFields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
+            builder.startObject(CommonFields.FAIL_LATENCY);
+            failHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
 
@@ -122,16 +145,6 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             return mGetFailedCount;
         }
     }
-    static final class Fields {
-        static final String MGET = "mget";
-        static final String MGET_TOTAL = "total";
-        static final String MGET_TIME = "time";
-        static final String MGET_TIME_IN_MILLIS = "time_in_millis";
-        static final String MGET_CURRENT = "current";
-        static final String MGET_TIME_OUT = "time_out";
-        static final String MGET_FAILED = "failed";
-        static final String IN_ALL = "in_all";
-    }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
@@ -145,7 +158,7 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.startObject(Fields.MGET);
+        builder.startObject( "mget");
         totalStats.toXContent(builder, params);
         builder.endObject();
         return builder;
