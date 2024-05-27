@@ -84,8 +84,8 @@ public class SearchStats  implements Streamable, ToXContentFragment {
             this.searchTimeOutCount += stats.searchTimeOutCount;
             this.searchFailedCount += stats.searchFailedCount;
             this.inAll += stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {

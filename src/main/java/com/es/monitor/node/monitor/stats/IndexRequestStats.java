@@ -77,8 +77,8 @@ public class IndexRequestStats  implements Streamable, ToXContentFragment {
             this.indexTimeOutCount += stats.indexTimeOutCount;
             this.indexFailedCount += stats.indexFailedCount;
             this.inAll = stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {

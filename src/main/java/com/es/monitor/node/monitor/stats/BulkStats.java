@@ -90,8 +90,8 @@ public class BulkStats implements Streamable,ToXContentFragment {
             this.bulkTimeOutCount += stats.bulkTimeOutCount;
             this.bulkFailedCount += stats.bulkFailedCount;
             this.inAll += stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
         @Override

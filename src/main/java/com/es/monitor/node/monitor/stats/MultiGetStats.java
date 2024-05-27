@@ -71,8 +71,8 @@ public class MultiGetStats implements Streamable, ToXContentFragment {
             this.mGetTimeOutCount += stats.mGetTimeOutCount;
             this.mGetFailedCount += stats.mGetFailedCount;
             this.inAll += stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
 

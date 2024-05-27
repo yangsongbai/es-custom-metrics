@@ -53,14 +53,14 @@ public class HistogramStats implements Streamable, ToXContentFragment {
         return new HistogramStats(in);
     }
 
-    public void add(HistogramStats stats) {
-        this.avg += stats.avg;
-        this.median += stats.median;
-        this.max += stats.max;
-        this.min += stats.min;
-        this.tp90 += stats.tp90;
-        this.tp99 += stats.tp99;
-        this.tp999 += stats.tp999;
+    public void calculateTotal(HistogramStats stats) {
+        this.avg = (this.avg + stats.avg) / 2;
+        this.median = (this.median + stats.median)/2;
+        this.max = Math.max(this.max, stats.max);
+        this.min = Math.min(this.min, stats.min);
+        this.tp90 = Math.min(this.tp90, stats.tp90);
+        this.tp99 =  Math.min(this.tp99, stats.tp99);
+        this.tp999 = Math.max(this.tp999, stats.tp999);
     }
 
     @Override

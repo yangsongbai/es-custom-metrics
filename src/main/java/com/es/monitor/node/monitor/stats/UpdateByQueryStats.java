@@ -75,8 +75,8 @@ public class UpdateByQueryStats  implements Streamable, ToXContentFragment {
             this.updateByQueryTimeOutCount += stats.updateByQueryTimeOutCount;
             this.updateByQueryFailedCount += stats.updateByQueryFailedCount;
             this.inAll += stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {

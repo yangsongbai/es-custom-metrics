@@ -100,8 +100,8 @@ public class DeleteByQueryStats implements Streamable, ToXContentFragment {
             this.deleteByQueryTimeOutCount += stats.deleteByQueryTimeOutCount;
             this.deleteByQueryFailedCount += stats.deleteByQueryFailedCount;
             this.inAll += stats.inAll;
-            this.sucHistogramStats.add(stats.sucHistogramStats);
-            this.failHistogramStats.add(stats.failHistogramStats);
+            this.sucHistogramStats.calculateTotal(stats.sucHistogramStats);
+            this.failHistogramStats.calculateTotal(stats.failHistogramStats);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
