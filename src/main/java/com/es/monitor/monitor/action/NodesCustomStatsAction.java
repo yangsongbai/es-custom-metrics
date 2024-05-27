@@ -5,12 +5,6 @@ import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequestBuilde
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
 import org.elasticsearch.client.ElasticsearchClient;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:50
- */
 public class NodesCustomStatsAction extends Action<NodesCustomStatsRequest, NodesCustomStatsResponse, NodesCustomStatsRequestBuilder> {
 
     public static final NodesCustomStatsAction INSTANCE = new NodesCustomStatsAction();

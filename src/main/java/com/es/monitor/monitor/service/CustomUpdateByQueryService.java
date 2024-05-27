@@ -6,12 +6,7 @@ import org.elasticsearch.common.metrics.MeanMetric;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 20:41
- */
+
 public class CustomUpdateByQueryService implements  CustomStatsService {
 
     private final StatsHolder totalStats = new StatsHolder();

@@ -10,12 +10,7 @@ import org.elasticsearch.common.metrics.MeanMetric;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/7 16:00
- */
+
 public class CustomSearchService  implements ClusterStateListener, CustomStatsService {
     private static final Logger logger = LogManager.getLogger(CustomSearchService.class);
 

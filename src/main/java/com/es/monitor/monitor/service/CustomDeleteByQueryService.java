@@ -6,12 +6,6 @@ import org.elasticsearch.common.metrics.MeanMetric;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 20:32
- */
 public class CustomDeleteByQueryService implements  CustomStatsService {
 
     private final StatsHolder totalStats = new StatsHolder();
@@ -66,6 +60,10 @@ public class CustomDeleteByQueryService implements  CustomStatsService {
     @Override
     public void clear() {
         totalStats.clear();
+    }
+
+    @Override
+    public void fillEmptyData(){
     }
 
     static class StatsHolder {

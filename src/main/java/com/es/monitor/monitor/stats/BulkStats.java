@@ -1,13 +1,12 @@
 package com.es.monitor.monitor.stats;
 
+import com.es.monitor.monitor.metric.HistogramMetricSnapshot;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
-import org.elasticsearch.common.io.stream.Writeable;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.ToXContentFragment;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.shard.IndexingStats;
 
 import java.io.IOException;
 
@@ -47,7 +46,11 @@ public class BulkStats implements Streamable,ToXContentFragment {
         private long bulkFailedCount;
         private long bulkPartFailedCount;
         private long inAll;
-        Stats() {}
+
+       private HistogramStats sucHistogramStats;
+        Stats() {
+            sucHistogramStats = new HistogramStats();
+        }
 
         public Stats(StreamInput in) throws IOException {
             bulkCount = in.readVLong();
@@ -56,15 +59,17 @@ public class BulkStats implements Streamable,ToXContentFragment {
             bulkTimeOutCount = in.readVLong();
             bulkFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = new HistogramStats(in);
         }
 
-        public Stats(long inAll, long bulkCount, long bulkTimeInMillis, long bulkCurrent, long bulkTimeOutCount, long bulkFailedCount) {
+        public Stats(long inAll, long bulkCount, long bulkTimeInMillis, long bulkCurrent, long bulkTimeOutCount, long bulkFailedCount, HistogramMetricSnapshot snapshot) {
             this.bulkCount = bulkCount;
             this.bulkTimeInMillis = bulkTimeInMillis;
             this.bulkCurrent = bulkCurrent;
             this.bulkTimeOutCount = bulkTimeOutCount;
             this.bulkFailedCount = bulkFailedCount;
             this.inAll = inAll;
+            this.sucHistogramStats = new HistogramStats(snapshot);
         }
 
         public static Stats readStats(StreamInput in) throws IOException {
@@ -80,6 +85,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             this.bulkTimeOutCount += stats.bulkTimeOutCount;
             this.bulkFailedCount += stats.bulkFailedCount;
             this.inAll += stats.inAll;
+            this.sucHistogramStats.add(stats.sucHistogramStats);
         }
 
         @Override
@@ -90,6 +96,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             bulkTimeOutCount = in.readVLong();
             bulkFailedCount = in.readVLong();
             inAll = in.readVLong();
+            sucHistogramStats = HistogramStats.readStats(in);
         }
 
         @Override
@@ -100,6 +107,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
             out.writeVLong(bulkTimeOutCount);
             out.writeVLong(bulkFailedCount);
             out.writeVLong(inAll);
+            sucHistogramStats.writeTo(out);
         }
 
         @Override
@@ -110,6 +118,9 @@ public class BulkStats implements Streamable,ToXContentFragment {
             builder.field(Fields.BULK_TIME_OUT, bulkTimeOutCount);
             builder.field(Fields.BULK_FAILED, bulkFailedCount);
             builder.field(Fields.IN_ALL, inAll);
+            builder.startObject(Fields.SUC_LATENCY);
+            sucHistogramStats.toXContent(builder, params);
+            builder.endObject();
             return builder;
         }
 
@@ -122,6 +133,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
                     ", bulkTimeOutCount=" + bulkTimeOutCount +
                     ", bulkFailedCount=" + bulkFailedCount +
                     ", bulkPartFailedCount=" + bulkPartFailedCount +
+                    ", sucHistogramStats=" + sucHistogramStats.toString() +
                     '}';
         }
 
@@ -138,6 +150,7 @@ public class BulkStats implements Streamable,ToXContentFragment {
         static final String BULK_FAILED = "failed";
         static final String BULK_PART_FAILED = "part_failed";
         static final String IN_ALL = "in_all";
+        static final String SUC_LATENCY = "suc_latency";
     }
 
     @Override

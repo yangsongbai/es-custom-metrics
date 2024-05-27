@@ -4,6 +4,17 @@
  * This is a general purpose Gradle build.
  * Learn more about Gradle by exploring our samples at https://docs.gradle.org/6.7/samples
  */
+static def gitHashAndBuildTime() {
+    return "hash_id=" + getGitSHA() + " and publish_time=" + releaseTime()
+}
+
+static def releaseTime() {
+    return new Date().format("yyyy-MM-dd", TimeZone.getTimeZone("GMT+08:00"))
+}
+
+static def getGitSHA() {
+    return 'git rev-parse --short HEAD'.execute().text.trim()
+}
 
 plugins {
     id "elasticsearch.esplugin" version "6.8.23"
@@ -19,7 +30,7 @@ apply plugin: 'elasticsearch.esplugin'
 
 esplugin {
     name "es-custom-metrics"
-    description "plugin for ES monitor & metric Plugin"
+    description "plugin for ES monitor & metric Plugin"+gitHashAndBuildTime()
     classname "com.es.monitor.EsMetricsPlugin"
     licenseFile rootProject.file("LICENSE.txt")
     noticeFile rootProject.file("NOTICE.md")
@@ -64,7 +75,7 @@ tasks.testingConventions.enabled(false)
 }*/
 
 allprojects {
-
+    tasks.withType(Javadoc).all { enabled = false }
     // ignore missing javadocs
     tasks.withType(Javadoc).configureEach { Javadoc javadoc ->
         // the -quiet here is because of a bug in gradle, in that adding a string option

@@ -15,12 +15,6 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:40
- */
 public class NodesCustomStatsResponse  extends BaseNodesResponse<NodeCustomStats> implements ToXContentFragment {
     protected NodesCustomStatsResponse() {
     }
@@ -52,7 +46,7 @@ public class NodesCustomStatsResponse  extends BaseNodesResponse<NodeCustomStats
         builder.startObject("_all");
         NodeCustomIndicesStats  nodeCustomIndicesStats = getTotal();
         if (nodeCustomIndicesStats != null) {
-            nodeCustomIndicesStats.toXContent(builder,params);
+            nodeCustomIndicesStats.toXContent(builder, params);
         }
         builder.endObject();
         builder.startObject("nodes");

@@ -6,17 +6,16 @@ import com.es.monitor.monitor.stats.NodeCustomIndicesStats;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.cluster.node.DiscoveryNode;
+import org.elasticsearch.common.component.AbstractLifecycleComponent;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.threadpool.Scheduler;
+import org.elasticsearch.threadpool.ThreadPool;
 
 import java.io.Closeable;
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:42
- */
-public class NodeCustomService  implements Closeable {
+
+public class NodeCustomService  extends AbstractLifecycleComponent implements Closeable {
     private static final Logger logger = LogManager.getLogger(NodeCustomService.class);
 
     private final CustomBulkService customBulkService;
@@ -28,10 +27,13 @@ public class NodeCustomService  implements Closeable {
     private final CustomMultiGetService customMultiGetService;
     private final CustomMultiSearchService customMultiSearchService;
 
+    private final Scheduler.Cancellable fillUpdater;
+
+
     public NodeCustomService(CustomBulkService customBulkService, CustomSearchService customSearchService,
                              CustomUpdateByQueryService customUpdateByQueryService, CustomDeleteByQueryService customDeleteByQueryService,
                              CustomGetService customGetService, CustomIndexService customIndexService,
-                             CustomMultiGetService customMultiGetService, CustomMultiSearchService customMultiSearchService) {
+                             CustomMultiGetService customMultiGetService, CustomMultiSearchService customMultiSearchService, ThreadPool threadPool) {
         this.customBulkService = customBulkService;
         this.customSearchService = customSearchService;
         this.customDeleteByQueryService = customDeleteByQueryService;
@@ -40,12 +42,29 @@ public class NodeCustomService  implements Closeable {
         this.customMultiGetService = customMultiGetService;
         this.customIndexService = customIndexService;
         this.customMultiSearchService = customMultiSearchService;
+        this.fillUpdater = threadPool.scheduleWithFixedDelay(new MonitorMetricUpdater(), TimeValue.timeValueSeconds(1L), ThreadPool.Names.GENERIC);
     }
 
     @Override
-    public void close() throws IOException {
+    protected void doStart() {
 
     }
+
+    @Override
+    protected void doStop() {
+        fillUpdater.cancel();
+    }
+
+    @Override
+    public void close()  {
+
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+
+    }
+
     public NodeCustomStats stats(DiscoveryNode localNode, boolean bulk, boolean search) {
         CommonCustomStats customStats = new CommonCustomStats(customBulkService.stats(),customSearchService.stats(),
                 this.customDeleteByQueryService.stats(),this.customUpdateByQueryService.stats(),this.customGetService.stats()
@@ -62,5 +81,15 @@ public class NodeCustomService  implements Closeable {
         this.customMultiGetService.clear();
         this.customIndexService.clear();
         this.customMultiSearchService.clear();
+    }
+
+    private class MonitorMetricUpdater implements Runnable {
+        @Override
+        public void run() {
+            fillMetricData();
+        }
+    }
+    private void fillMetricData() {
+        this.customBulkService.fillEmptyData();
     }
 }

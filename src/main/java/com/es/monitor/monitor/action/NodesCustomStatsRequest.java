@@ -10,12 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:26
- */
 public class NodesCustomStatsRequest extends BaseNodesRequest<NodesCustomStatsRequest>  {
     private final Set<String> requestedMetrics = new HashSet<>();
     private boolean clear;

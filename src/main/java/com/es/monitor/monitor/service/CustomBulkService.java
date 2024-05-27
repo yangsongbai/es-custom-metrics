@@ -1,5 +1,6 @@
 package com.es.monitor.monitor.service;
 
+import com.es.monitor.monitor.metric.HistogramMetric;
 import com.es.monitor.monitor.stats.BulkStats;
 import org.elasticsearch.cluster.ClusterChangedEvent;
 import org.elasticsearch.cluster.ClusterStateListener;
@@ -8,12 +9,7 @@ import org.elasticsearch.common.metrics.MeanMetric;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/7 15:37
- */
+
 public class CustomBulkService implements  ClusterStateListener, CustomStatsService {
 
     private final StatsHolder totalStats = new StatsHolder();
@@ -50,7 +46,8 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
             clear();
         }
         totalStats.bulkMetric.inc(costTime);
-        if (timeout == true){
+        totalStats.sucHistogram.inc(costTime);
+        if (timeout) {
             totalStats.bulkTimeOut.inc();
         }
         totalStats.bulkCurrent.dec();
@@ -63,6 +60,11 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
     public void fail(){
         totalStats.bulkFailed.inc();
         totalStats.bulkCurrent.dec();
+    }
+
+    @Override
+    public void fillEmptyData(){
+        totalStats.sucHistogram.fillEmptyData();
     }
 
     @Override
@@ -81,6 +83,8 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
         private  CounterMetric inAll = new CounterMetric();
         private  CounterMetric bulkFailed = new CounterMetric();
         private  CounterMetric bulkTimeOut = new CounterMetric();
+        private HistogramMetric sucHistogram = new HistogramMetric();
+
 
         public void clear(){
             bulkMetric = new MeanMetric();
@@ -88,12 +92,13 @@ public class CustomBulkService implements  ClusterStateListener, CustomStatsServ
             bulkFailed = new CounterMetric();
             bulkTimeOut = new CounterMetric();
             inAll = new CounterMetric();
+            sucHistogram = new HistogramMetric();
         }
 
         BulkStats.Stats stats() {
             return new BulkStats.Stats(inAll.count(),
                     bulkMetric.count(), TimeUnit.MILLISECONDS.toMillis(bulkMetric.sum()),
-                    bulkCurrent.count(),bulkTimeOut.count(),bulkFailed.count());
+                    bulkCurrent.count(),bulkTimeOut.count(),bulkFailed.count(), sucHistogram.getSnapshot());
         }
     }
 }

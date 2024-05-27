@@ -13,12 +13,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:39
- */
+
 public class NodeCustomStats extends BaseNodeResponse implements ToXContentFragment {
     private static final Logger logger = LogManager.getLogger(TransportNodesCustomStatsAction.class);
 

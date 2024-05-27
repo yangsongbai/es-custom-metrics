@@ -6,12 +6,7 @@ import org.elasticsearch.common.metrics.MeanMetric;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 20:37
- */
+
 public class CustomGetService implements  CustomStatsService{
 
     private final StatsHolder totalStats = new StatsHolder();
@@ -56,6 +51,10 @@ public class CustomGetService implements  CustomStatsService{
     public void fail(){
         totalStats.getFailed.inc();
         totalStats.getCurrent.dec();
+    }
+
+    @Override
+    public void fillEmptyData(){
     }
 
     @Override

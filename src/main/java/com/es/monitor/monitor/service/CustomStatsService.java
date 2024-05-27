@@ -1,11 +1,6 @@
 package com.es.monitor.monitor.service;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/7 16:53
- */
+
 public interface CustomStatsService {
 
     /**
@@ -33,4 +28,6 @@ public interface CustomStatsService {
     void partFail();
 
     void clear();
+
+    default void fillEmptyData(){}
 }

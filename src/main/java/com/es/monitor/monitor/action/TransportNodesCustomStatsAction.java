@@ -25,12 +25,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:44
- */
 public class TransportNodesCustomStatsAction  extends TransportNodesAction<NodesCustomStatsRequest,
         NodesCustomStatsResponse,
         TransportNodesCustomStatsAction.NodeCustomStatsRequest,

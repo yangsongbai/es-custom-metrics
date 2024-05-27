@@ -146,7 +146,7 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
 
         NodeCustomService nodeCustomService = new NodeCustomService(this.customBulkService.get() , this.customSearchService.get(),
                 this.updateByQueryService.get(),this.deleteByQueryService.get(),this.getService.get(),this.indexService.get(),
-                this.multiGetService.get(),this.multiSearchService.get());
+                this.multiGetService.get(),this.multiSearchService.get(), threadPool);
         this.nodeCustomService.set(nodeCustomService);
         components.add(this.nodeCustomService.get());
 

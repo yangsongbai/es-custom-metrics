@@ -10,12 +10,6 @@ import org.elasticsearch.rest.action.RestActions;
 
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/6 16:20
- */
 public class RestNodesCustomStatsAction extends BaseRestHandler {
     @Override
     public String getName() {

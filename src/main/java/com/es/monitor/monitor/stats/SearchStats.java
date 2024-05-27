@@ -20,8 +20,6 @@ import java.io.IOException;
  *     "search_time_out" : 3   //超时次数
  *   // "search_time_out_twenties_ms" : 3   //超时20ms的次数
  *   }
- * @Author : yangsongbai1
- * @create 2022/11/7 11:14
  */
 public class SearchStats  implements Streamable, ToXContentFragment {
     private  Stats totalStats;

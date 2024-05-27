@@ -10,12 +10,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai1
- * @create 2022/11/8 19:28
- */
+
 public class GetStats  implements Streamable, ToXContentFragment {
     private  Stats totalStats;
 
