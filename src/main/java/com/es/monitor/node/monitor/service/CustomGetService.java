@@ -39,6 +39,7 @@ public class CustomGetService implements  CustomStatsService{
             clear();
         }
         totalStats.getMetric.inc(costTime);
+        totalStats.sucHistogram.inc(costTime);
         if (timeout == true){
             totalStats.getTimeOut.inc();
         }
