@@ -34,6 +34,7 @@ esplugin {
     classname "com.es.monitor.EsMetricsPlugin"
     licenseFile rootProject.file("LICENSE.txt")
     noticeFile rootProject.file("NOTICE.md")
+    version "${plugin_version}"
 }
 
 
@@ -47,10 +48,10 @@ repositories {
 }
 
 dependencies {
-   compile "org.elasticsearch:elasticsearch:${es_version}"
+   compileOnly "org.elasticsearch:elasticsearch:${es_version}"
     //compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.11'
     //compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.11'
-   //compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
 }
 
 tasks.dependencyLicenses.enabled(false)

@@ -2,6 +2,7 @@ package com.es.monitor.node.monitor.action;
 
 
 import org.elasticsearch.client.node.NodeClient;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.RestController;
@@ -33,8 +34,9 @@ public class RestNodesCustomStatsAction extends BaseRestHandler {
      */
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
+        String[] nodesIds = Strings.splitStringByCommaToArray(request.param("nodeId"));
         boolean clear = request.paramAsBoolean("clear",false);
-        NodesCustomStatsRequest req = new NodesCustomStatsRequest();
+        NodesCustomStatsRequest req = new NodesCustomStatsRequest(nodesIds);
         req.setClear(clear);
         return channel ->
                 client.execute(NodesCustomStatsAction.INSTANCE, req, new RestActions.NodesResponseRestListener<>(channel));

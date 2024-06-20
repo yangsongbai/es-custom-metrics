@@ -124,7 +124,8 @@ public class JPackFilter implements ActionFilter {
                     accessTrailService.requestInfo(access);
                 }
             }
-            if (StringUtils.isEmpty(mark)) {
+
+            if (Strings.isNullOrEmpty(mark)) {
                 threadContext.putHeader(Constant.JES_REQUEST_MARK, "true");
                 logger.debug("mark，access type：[{}],action:[{}]", request.getClass().getName(), action);
             }
@@ -146,13 +147,13 @@ public class JPackFilter implements ActionFilter {
 
     private boolean isParentTask(Task task, String action, String mark) {
         return (task.getParentTaskId() == null || !task.getParentTaskId().isSet() || task.getParentTaskId().getId() == -1)
-                && StringUtils.isEmpty(mark) && action.lastIndexOf("]") == -1;
+                && Strings.isNullOrEmpty(mark) && action.lastIndexOf("]") == -1;
     }
 
     private RemoteInfo getRemoteInfo() {
         RemoteInfo remoteInfo = new RemoteInfo();
         String  address = threadContext.getHeader(Constant.REMOTE_ADDRESS);
-        if (!StringUtils.isEmpty(address)){
+        if (!Strings.isNullOrEmpty(address)){
             remoteInfo.setRemoteAddress(address);
         }
         String  method = threadContext.getHeader(Constant.REMOTE_METHOD);
@@ -175,7 +176,7 @@ public class JPackFilter implements ActionFilter {
         }
 
         //如果header头拿到的远程地址不为空，则说明是http请求
-        if (!StringUtils.isEmpty(address)){
+        if (!Strings.isNullOrEmpty(address)){
             remoteInfo.setRest(true);
         }
 
