@@ -1,8 +1,10 @@
 package com.es.monitor.node.monitor.metric;
 
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class HistogramMetric {
-    private final Histogram histogram = new Histogram(new ExponentiallyDecayingReservoir());
+    private final Histogram histogram = new Histogram(new SlidingTimeWindowArrayReservoir(30, SECONDS));
 
 
     private long lastIncModifyTime;
