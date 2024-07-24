@@ -8,13 +8,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-/**
- * Created by
- *
- * @Author : yangsongbai
- * @create 2022/11/28 14:52
- */
-public class NodeCustomIndicesStats  implements Writeable, ToXContentFragment  {
+
+public class NodeCustomIndicesStats implements Writeable, ToXContentFragment  {
      CommonCustomStats stats;
 
     public NodeCustomIndicesStats(CommonCustomStats stats) {

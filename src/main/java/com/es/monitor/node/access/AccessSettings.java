@@ -108,10 +108,16 @@ public class AccessSettings {
         clusterService.getClusterSettings().addSettingsUpdateConsumer(SETTING_ACCESS_METRIC_ENABLE, this::setAccessMetricEnable);
     }
 
-    public static List<Setting<?>> getSettings() {
+/*    public static List<Setting<?>> getSettings() {
         return Arrays.asList(SETTING_ACCESS_LOG_USER_INCLUDE,SETTING_ACCESS_LOG_USER_EXCLUDE,SETTING_ACCESS_LOG_IP_INCLUDE,SETTING_ACCESS_LOG_IP_EXCLUDE,SETTING_ACCESS_LOG_URI_INCLUDE,
                 SETTING_ACCESS_LOG_URI_EXCLUDE,SETTING_ACCESS_LOG_ENABLE,SETTING_ACCESS_LOG_ACTION_INCLUDE,
                 SETTING_ACCESS_LOG_ACTION_EXCLUDE,SETTING_ACCESS_METRIC_ENABLE);
+    }*/
+
+    public static void addSettings(List<Setting<?>> settingsList) {
+        settingsList.addAll(Arrays.asList(SETTING_ACCESS_LOG_USER_INCLUDE,SETTING_ACCESS_LOG_USER_EXCLUDE,SETTING_ACCESS_LOG_IP_INCLUDE,SETTING_ACCESS_LOG_IP_EXCLUDE,SETTING_ACCESS_LOG_URI_INCLUDE,
+                SETTING_ACCESS_LOG_URI_EXCLUDE,SETTING_ACCESS_LOG_ENABLE,SETTING_ACCESS_LOG_ACTION_INCLUDE,
+                SETTING_ACCESS_LOG_ACTION_EXCLUDE,SETTING_ACCESS_METRIC_ENABLE));
     }
 
     private void setAccessLogUserExclude(List<String> exclude) {

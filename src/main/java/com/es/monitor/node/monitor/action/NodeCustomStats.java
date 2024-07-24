@@ -15,8 +15,6 @@ import java.util.Map;
 
 
 public class NodeCustomStats extends BaseNodeResponse implements ToXContentFragment {
-    private static final Logger logger = LogManager.getLogger(TransportNodesCustomStatsAction.class);
-
     private long timestamp;
 
     @Nullable

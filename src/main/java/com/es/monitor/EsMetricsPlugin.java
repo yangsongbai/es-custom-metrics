@@ -1,5 +1,12 @@
 package com.es.monitor;
 
+import com.es.monitor.indices.IndexMonitorSettings;
+import com.es.monitor.indices.action.NodeIndicesCustomStatsAction;
+import com.es.monitor.indices.action.RestIndicesCustomStatsAction;
+import com.es.monitor.indices.action.TransportNodeIndicesCustomStatsAction;
+import com.es.monitor.indices.index.IndexingOperationService;
+import com.es.monitor.indices.service.CustomBigDocService;
+import com.es.monitor.indices.service.NodeIndicesCustomService;
 import com.es.monitor.node.access.AccessSettings;
 import com.es.monitor.node.access.AccessTrail;
 import com.es.monitor.node.access.AccessTrailService;
@@ -48,8 +55,10 @@ import org.elasticsearch.common.settings.SettingsFilter;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.env.NodeEnvironment;
+import org.elasticsearch.index.IndexModule;
 import org.elasticsearch.plugins.ActionPlugin;
 import org.elasticsearch.plugins.ClusterPlugin;
+import org.elasticsearch.plugins.NetworkPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestHandler;
@@ -70,7 +79,7 @@ import java.util.function.Supplier;
  * @Author : yangsongbai
  * @create 2022/12/2 19:46
  */
-public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlugin {
+public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlugin, NetworkPlugin {
     private static final Logger logger = LogManager.getLogger(EsMetricsPlugin.class);
     protected final Settings settings;
     private final SetOnce<JPackFilter> jPackFilter  = new SetOnce<>();
@@ -86,6 +95,11 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
     private final SetOnce<CustomMultiSearchService> multiSearchService = new SetOnce<>();
     private final SetOnce<CustomUpdateByQueryService> updateByQueryService = new SetOnce<>();
     private final SetOnce<AccessSettings> accessSettings  = new SetOnce<>();
+
+    private final SetOnce<IndexingOperationService> indexingOperationService = new SetOnce<>();
+    private final SetOnce<NodeIndicesCustomService> nodeIndicesCustomService = new SetOnce<>();
+
+    private final SetOnce<CustomBigDocService> customBigDocService = new SetOnce<>();
 
     @Inject
     public EsMetricsPlugin(final Settings settings, final Path configPath) {
@@ -149,6 +163,16 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
         this.nodeCustomService.set(nodeCustomService);
         components.add(this.nodeCustomService.get());
 
+        CustomBigDocService bigDocService = new CustomBigDocService();
+        customBigDocService.set(bigDocService);
+
+        NodeIndicesCustomService  nodeIndicesCustomService =  new NodeIndicesCustomService(customBigDocService.get());
+        this.nodeIndicesCustomService.set(nodeIndicesCustomService);
+        components.add(this.nodeIndicesCustomService.get());
+
+        IndexingOperationService indexingOperation = new IndexingOperationService(settings, clusterService, customBigDocService.get());
+        this.indexingOperationService.set(indexingOperation);
+        components.add(indexingOperationService.get());
 
         logger.info(" monitor Plugin {} finished init.", EsMetricsPlugin.class.getName());
         return components;
@@ -158,7 +182,9 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
     public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
         return Arrays.asList(
                 new ActionHandler<>(IndexAllocationExplainAction.INSTANCE, TransportIndexAllocationExplainAction.class),
-                new ActionHandler<>(NodesCustomStatsAction.INSTANCE, TransportNodesCustomStatsAction.class)
+                new ActionHandler<>(NodesCustomStatsAction.INSTANCE, TransportNodesCustomStatsAction.class),
+                new ActionHandler<>(NodeIndicesCustomStatsAction.INSTANCE, TransportNodeIndicesCustomStatsAction.class)
+
         );
     }
 
@@ -166,7 +192,8 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
     public List<RestHandler> getRestHandlers(Settings settings, RestController restController, ClusterSettings clusterSettings, IndexScopedSettings indexScopedSettings, SettingsFilter settingsFilter, IndexNameExpressionResolver indexNameExpressionResolver, Supplier<DiscoveryNodes> nodesInCluster) {
         return Arrays.asList(
                 new RestIndexAllocationExplainAction(settings,restController),
-                new RestNodesCustomStatsAction(settings,restController)
+                new RestNodesCustomStatsAction(settings,restController),
+                new RestIndicesCustomStatsAction(settings,restController)
         );
     }
 
@@ -177,6 +204,15 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
 
     @Override
     public List<Setting<?>> getSettings() {
-        return AccessSettings.getSettings();
+        final List<Setting<?>> settings = new ArrayList<>();
+        AccessSettings.addSettings(settings);
+        IndexMonitorSettings.addSettings(settings);
+        return settings;
+    }
+
+    @Override
+    public void onIndexModule(IndexModule indexModule) {
+        indexModule.addIndexOperationListener(indexingOperationService.get());
+        indexModule.addIndexEventListener(indexingOperationService.get());
     }
 }
