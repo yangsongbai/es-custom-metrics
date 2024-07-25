@@ -131,8 +131,7 @@ public class SearchOperationService extends AbstractLifecycleComponent implement
     }
 
     private void recordIndexFetchSlowLogMetric(ShardId shardId, long took, String action, Settings settings, String indexName) {
-        //todo 指标修正
-        long  thresholdTime = settings.getAsTime( "index.search.slowlog.threshold.fetch.warn", TimeValue.timeValueMillis(-1)).getMillis();
+        long thresholdTime = getFetchSlowThresholdTime(settings);
         if (thresholdTime > 0 && thresholdTime >= took) {
             if (ACTION_FETCH_SUC.equals(action)) {
                 slowSearchLogService.incFetchSuc(indexName, took);
@@ -147,9 +146,18 @@ public class SearchOperationService extends AbstractLifecycleComponent implement
         }
     }
 
+    private long getFetchSlowThresholdTime(Settings settings) {
+        long  warn = settings.getAsTime( "index.search.slowlog.threshold.fetch.warn", TimeValue.timeValueMillis(-1)).getMillis();
+        long  info = settings.getAsTime( "index.search.slowlog.threshold.fetch.info", TimeValue.timeValueMillis(-1)).getMillis();
+        if (warn > 0 && info > 0) {
+            return Math.min(warn, info);
+        }
+        if (info > 0) return info;
+        return warn;
+    }
+
     private void recordIndexQuerySlowLogMetric(ShardId shardId, long took, String action, Settings settings, String indexName) {
-        //todo 指标修正
-        long  thresholdTime = settings.getAsTime( "index.search.slowlog.threshold.query.warn", TimeValue.timeValueMillis(-1)).getMillis();
+        long thresholdTime = getQuerySlowThresholdTime(settings);
         if (thresholdTime > 0 && thresholdTime >= took) {
             if (ACTION_QUERY_SUC.equals(action)){
                 slowSearchLogService.incQuerySuc(indexName, took);
@@ -162,6 +170,16 @@ public class SearchOperationService extends AbstractLifecycleComponent implement
                 logger.trace("index[{}], engine action:[{}] ,记录慢查日志指标 , thresholdTime[{}ms], took:[{}ms]", shardId.getIndex().toString(), action, thresholdTime, took);
             }
         }
+    }
+
+    private long getQuerySlowThresholdTime(Settings settings) {
+        long  warn = settings.getAsTime( "index.search.slowlog.threshold.query.warn", TimeValue.timeValueMillis(-1)).getMillis();
+        long  info = settings.getAsTime( "index.search.slowlog.threshold.query.info", TimeValue.timeValueMillis(-1)).getMillis();
+        if (warn > 0 && info > 0) {
+            return Math.min(warn, info);
+        }
+        if (info > 0) return info;
+        return warn;
     }
 
 }

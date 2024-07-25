@@ -13,7 +13,7 @@ public class IndexMonitorSettings {
     public static final String CLUSTER_CLUSTER_BIG_DOC_PREFIX = "jd.cluster.big_doc";
 
     public static final Setting<ByteSizeValue> SETTING_CLUSTER_BIG_DOC_THRESHOLD =
-            Setting.byteSizeSetting(CLUSTER_CLUSTER_BIG_DOC_PREFIX +".threshold", new ByteSizeValue(0, ByteSizeUnit.KB), Setting.Property.NodeScope, Setting.Property.Dynamic);
+            Setting.byteSizeSetting(CLUSTER_CLUSTER_BIG_DOC_PREFIX +".threshold", new ByteSizeValue(20, ByteSizeUnit.KB), Setting.Property.NodeScope, Setting.Property.Dynamic);
 
     public static final Setting<Boolean> SETTING_BIG_DOC_LOG_ENABLE = Setting.boolSetting(CLUSTER_CLUSTER_BIG_DOC_PREFIX +".log.enable",
             true, Setting.Property.NodeScope, Setting.Property.Dynamic);

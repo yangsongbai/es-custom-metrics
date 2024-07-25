@@ -151,7 +151,7 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
         if (indexMetaData != null ){
             Settings settings = indexMetaData.getSettings();
             if (settings != null) {
-                long  thresholdTime = settings.getAsTime(INDEX_INDEXING_SLOWLOG_PREFIX +".threshold.index.warn", TimeValue.timeValueMillis(-1)).getMillis();
+                long thresholdTime = getIndexingSlowThresholdTime(settings);
                 if (thresholdTime > 0 && thresholdTime >= took) {
                     if (ACTION_INDEXING.equals(action)){
                         indexingSlowLogService.incIndexing(indexName, took);
@@ -165,6 +165,16 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
                  }
             }
         }
+    }
+
+    private long getIndexingSlowThresholdTime(Settings settings) {
+        long  warn = settings.getAsTime(INDEX_INDEXING_SLOWLOG_PREFIX +".threshold.index.warn", TimeValue.timeValueMillis(-1)).getMillis();
+        long  info = settings.getAsTime(INDEX_INDEXING_SLOWLOG_PREFIX +".threshold.index.info", TimeValue.timeValueMillis(-1)).getMillis();
+        if (warn > 0 && info > 0) {
+            return Math.min(warn, info);
+        }
+        if (info > 0) return info;
+        return warn;
     }
 
     @Override
