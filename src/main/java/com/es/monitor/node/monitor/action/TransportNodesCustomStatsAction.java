@@ -1,6 +1,6 @@
 package com.es.monitor.node.monitor.action;
 
-import com.es.monitor.node.monitor.service.NodeCustomService;
+import com.es.monitor.service.NodeCustomService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.FailedNodeException;
@@ -63,7 +63,7 @@ public class TransportNodesCustomStatsAction  extends TransportNodesAction<Nodes
             nodeCustomService.clear();
         }
         Set<String> metrics = request.requestedMetrics();
-        NodeCustomStats  stats = nodeCustomService.stats(transportService.getLocalNode(),
+        NodeCustomStats stats = nodeCustomService.stats(transportService.getLocalNode(),
                 NodesCustomStatsRequest.Metric.BULK.containedIn(metrics),
                 NodesCustomStatsRequest.Metric.SEARCH.containedIn(metrics));
         return stats;

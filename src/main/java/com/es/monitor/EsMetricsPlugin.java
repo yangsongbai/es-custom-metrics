@@ -5,8 +5,10 @@ import com.es.monitor.indices.action.NodeIndicesCustomStatsAction;
 import com.es.monitor.indices.action.RestIndicesCustomStatsAction;
 import com.es.monitor.indices.action.TransportNodeIndicesCustomStatsAction;
 import com.es.monitor.indices.index.IndexingOperationService;
+import com.es.monitor.indices.index.SearchOperationService;
 import com.es.monitor.indices.service.CustomBigDocService;
-import com.es.monitor.indices.service.NodeIndicesCustomService;
+import com.es.monitor.indices.service.CustomIndexingSlowLogService;
+import com.es.monitor.indices.service.CustomSlowSearchLogService;
 import com.es.monitor.node.access.AccessSettings;
 import com.es.monitor.node.access.AccessTrail;
 import com.es.monitor.node.access.AccessTrailService;
@@ -34,7 +36,7 @@ import com.es.monitor.node.monitor.service.CustomMultiGetService;
 import com.es.monitor.node.monitor.service.CustomMultiSearchService;
 import com.es.monitor.node.monitor.service.CustomSearchService;
 import com.es.monitor.node.monitor.service.CustomUpdateByQueryService;
-import com.es.monitor.node.monitor.service.NodeCustomService;
+import com.es.monitor.service.NodeCustomService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.util.SetOnce;
@@ -97,9 +99,15 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
     private final SetOnce<AccessSettings> accessSettings  = new SetOnce<>();
 
     private final SetOnce<IndexingOperationService> indexingOperationService = new SetOnce<>();
-    private final SetOnce<NodeIndicesCustomService> nodeIndicesCustomService = new SetOnce<>();
 
     private final SetOnce<CustomBigDocService> customBigDocService = new SetOnce<>();
+
+    private final SetOnce<CustomIndexingSlowLogService> customIndexingSlowLogService = new SetOnce<>();
+
+    private final SetOnce<CustomSlowSearchLogService> customSlowSearchLogService = new SetOnce<>();
+
+    private final SetOnce<SearchOperationService> searchOperationService = new SetOnce<>();
+
 
     @Inject
     public EsMetricsPlugin(final Settings settings, final Path configPath) {
@@ -157,22 +165,34 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
 
         this.jPackFilter.set(jPackFilter);
 
-        NodeCustomService nodeCustomService = new NodeCustomService(this.customBulkService.get() , this.customSearchService.get(),
-                this.updateByQueryService.get(),this.deleteByQueryService.get(),this.getService.get(),this.indexService.get(),
-                this.multiGetService.get(),this.multiSearchService.get(), threadPool);
-        this.nodeCustomService.set(nodeCustomService);
-        components.add(this.nodeCustomService.get());
+
 
         CustomBigDocService bigDocService = new CustomBigDocService();
         customBigDocService.set(bigDocService);
 
-        NodeIndicesCustomService  nodeIndicesCustomService =  new NodeIndicesCustomService(customBigDocService.get());
-        this.nodeIndicesCustomService.set(nodeIndicesCustomService);
-        components.add(this.nodeIndicesCustomService.get());
 
-        IndexingOperationService indexingOperation = new IndexingOperationService(settings, clusterService, customBigDocService.get());
+        CustomIndexingSlowLogService indexingSlowLogService = new CustomIndexingSlowLogService();
+        customIndexingSlowLogService.set(indexingSlowLogService);
+
+        CustomSlowSearchLogService searchLogService = new CustomSlowSearchLogService();
+        customSlowSearchLogService.set(searchLogService);
+
+        NodeCustomService nodeCustomService = new NodeCustomService(this.customBulkService.get() , this.customSearchService.get(),
+                this.updateByQueryService.get(),this.deleteByQueryService.get(),this.getService.get(),this.indexService.get(),
+                this.multiGetService.get(),this.multiSearchService.get(), threadPool,
+                customBigDocService.get(), customIndexingSlowLogService.get(), customSlowSearchLogService.get());
+        this.nodeCustomService.set(nodeCustomService);
+        components.add(this.nodeCustomService.get());
+
+
+        IndexingOperationService indexingOperation = new IndexingOperationService(settings, clusterService, customBigDocService.get(), customIndexingSlowLogService.get());
         this.indexingOperationService.set(indexingOperation);
         components.add(indexingOperationService.get());
+
+        SearchOperationService searchOperationService = new SearchOperationService(settings, clusterService, customSlowSearchLogService.get());
+        this.searchOperationService.set(searchOperationService);
+
+        components.add(this.searchOperationService.get());
 
         logger.info(" monitor Plugin {} finished init.", EsMetricsPlugin.class.getName());
         return components;

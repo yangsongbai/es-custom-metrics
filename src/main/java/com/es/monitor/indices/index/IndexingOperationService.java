@@ -2,14 +2,13 @@ package com.es.monitor.indices.index;
 
 import com.es.monitor.indices.IndexMonitorSettings;
 import com.es.monitor.indices.service.CustomBigDocService;
+import com.es.monitor.indices.service.CustomIndexingSlowLogService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
-import org.elasticsearch.common.settings.Setting;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.Index;
@@ -28,9 +27,13 @@ import static org.elasticsearch.index.IndexingSlowLog.INDEX_INDEXING_SLOWLOG_PRE
 
 public class IndexingOperationService extends AbstractLifecycleComponent implements IndexingOperationListener, IndexEventListener {
     private static final Logger logger = LogManager.getLogger(IndexingOperationService.class);
+    private final static String ACTION_DELETE = "del";
+    private final static String ACTION_INDEXING = "indexing";
 
     private  ByteSizeValue thresholdDocSize;
     CustomBigDocService customBigDocService;
+
+    private final CustomIndexingSlowLogService indexingSlowLogService;
 
     ClusterService clusterService;
 
@@ -40,7 +43,8 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
     private boolean slowLogMetricEnable;
 
     public IndexingOperationService(Settings settings,
-                                    ClusterService clusterService, CustomBigDocService customBigDocService) {
+                                    ClusterService clusterService, CustomBigDocService customBigDocService,
+                                    CustomIndexingSlowLogService indexingSlowLogService) {
         thresholdDocSize = IndexMonitorSettings.SETTING_CLUSTER_BIG_DOC_THRESHOLD.get(settings);
         bigDocLogEnable = IndexMonitorSettings.SETTING_BIG_DOC_LOG_ENABLE.get(settings);
         bigDocMetricEnable = IndexMonitorSettings.SETTING_BIG_DOC_METRIC_ENABLE.get(settings);
@@ -51,6 +55,7 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
         clusterService.getClusterSettings().addSettingsUpdateConsumer(IndexMonitorSettings.SETTING_SLOW_LOG_METRIC_ENABLE, this::setSlowLogMetricEnable);
         this.customBigDocService = customBigDocService;
         this.clusterService = clusterService;
+        this.indexingSlowLogService = indexingSlowLogService;
     }
 
     public void setBigDocLogEnable(boolean bigDocLogEnable) {
@@ -105,7 +110,8 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
         if (index == null) return;
         String indexName = index.getName();
         if ("".equals(indexName)) return;
-        customBigDocService.initCounterMetric(indexName);
+        customBigDocService.initMetric(indexName);
+        indexingSlowLogService.initMetric(indexName);
     }
 
     @Override
@@ -113,12 +119,12 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
        //索引删除从指标中移除掉
         String indexName = index.getName();
         if ("".equals(indexName)) return;
-        customBigDocService.removeCounterMetric(indexName);
+        customBigDocService.removeMetric(indexName);
+        indexingSlowLogService.removeMetric(indexName);
     }
 
     @Override
     public void postIndex(ShardId shardId, Engine.Index index, Engine.IndexResult result) {
-         String indexName = shardId.getIndexName();
          int documentSize = index.estimatedSizeInBytes();
          if(documentSize >= thresholdDocSize.getBytes()) {
              if (isBigDocLogEnable()){
@@ -132,22 +138,29 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
                  customBigDocService.incIndexing(shardId.getIndexName());
              }
          }
-        recordIndexSlowLogMetric(indexName, shardId, result.getTook());
+        recordIndexSlowLogMetric(shardId, result.getTook(), ACTION_DELETE);
     }
 
-    private void recordIndexSlowLogMetric(String indexName, ShardId shardId, long took) {
+    private void recordIndexSlowLogMetric(ShardId shardId, long took, String action) {
         if (!isSlowLogMetricEnable()) {
             return;
         }
+        took = nanosToMillis(took);
+        String indexName = shardId.getIndexName();
         IndexMetaData indexMetaData = clusterService.state().metaData().getIndices().get(indexName);
         if (indexMetaData != null ){
             Settings settings = indexMetaData.getSettings();
             if (settings != null) {
-                long  thresholdTime = settings.getAsTime(INDEX_INDEXING_SLOWLOG_PREFIX +".threshold.index.warn", TimeValue.timeValueMillis(-1)).getNanos();
+                long  thresholdTime = settings.getAsTime(INDEX_INDEXING_SLOWLOG_PREFIX +".threshold.index.warn", TimeValue.timeValueMillis(-1)).getMillis();
                 if (thresholdTime > 0 && thresholdTime >= took) {
-                     //记录索引的慢日志条数和阈值
+                    if (ACTION_INDEXING.equals(action)){
+                        indexingSlowLogService.incIndexing(indexName, took);
+                    } else if (ACTION_DELETE.equals(action)) {
+                        indexingSlowLogService.incDelete(indexName, took);
+                    }
+                    //记录索引的慢日志条数和阈值
                     if (logger.isTraceEnabled() ){
-                        logger.trace("index[{}],记录慢日志指标,thresholdTime[{}]", shardId.getIndex().toString(), thresholdTime);
+                        logger.trace("index[{}], engine action:[{}] ,记录慢日志指标, thresholdTime[{}ms], took:[{}ms]", shardId.getIndex().toString(), action, thresholdTime, took);
                     }
                  }
             }
@@ -178,6 +191,7 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
                 customBigDocService.incDelete(shardId.getIndexName());
             }
         }
+        recordIndexSlowLogMetric(shardId, result.getTook(), ACTION_INDEXING);
     }
 
     @Override
@@ -194,4 +208,9 @@ public class IndexingOperationService extends AbstractLifecycleComponent impleme
             }
         }
     }
+
+    private  long nanosToMillis(long tookInNanos) {
+        return tookInNanos / 1000000;
+    }
+
 }

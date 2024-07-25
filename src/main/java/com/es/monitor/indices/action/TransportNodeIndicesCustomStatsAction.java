@@ -1,8 +1,8 @@
 package com.es.monitor.indices.action;
 
 
-import com.es.monitor.indices.service.NodeIndicesCustomService;
 import com.es.monitor.indices.stats.NodesIndicesCustomStats;
+import com.es.monitor.service.NodeCustomService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.FailedNodeException;
@@ -28,18 +28,18 @@ public class TransportNodeIndicesCustomStatsAction extends TransportNodesAction<
     private static final Logger logger = LogManager.getLogger(TransportNodeIndicesCustomStatsAction.class);
 
     private final TransportService transportService;
-    private final NodeIndicesCustomService nodeIndicesCustomService;
+    private final NodeCustomService nodeCustomService;
 
     @Inject
     public TransportNodeIndicesCustomStatsAction(Settings settings, ThreadPool threadPool,
                                                  ClusterService clusterService, TransportService transportService,
                                                  ActionFilters actionFilters,
-                                                 IndexNameExpressionResolver indexNameExpressionResolver, NodeIndicesCustomService nodeIndicesCustomService) {
+                                                 IndexNameExpressionResolver indexNameExpressionResolver, NodeCustomService nodeCustomService) {
         super(settings, NodeIndicesCustomStatsAction.NAME, threadPool, clusterService, transportService, actionFilters,
                 indexNameExpressionResolver, NodesIndicesCustomStatsRequest::new, TransportNodeIndicesCustomStatsAction.NodeIndicesCustomStatsRequest::new,
                 ThreadPool.Names.MANAGEMENT, NodesIndicesCustomStats.class);
         this.transportService = transportService;
-        this.nodeIndicesCustomService = nodeIndicesCustomService;
+        this.nodeCustomService = nodeCustomService;
     }
 
     @Override
@@ -61,9 +61,9 @@ public class TransportNodeIndicesCustomStatsAction extends TransportNodesAction<
     protected NodesIndicesCustomStats nodeOperation(NodeIndicesCustomStatsRequest nodeRequest) {
         NodesIndicesCustomStatsRequest request = nodeRequest.request;
         if (request.isClear()){
-            nodeIndicesCustomService.clear();
+            nodeCustomService.clear();
         }
-        return nodeIndicesCustomService.stats(transportService.getLocalNode(), request.getIndices());
+        return nodeCustomService.stats(transportService.getLocalNode(), request.getIndices());
     }
 
     public  static class NodeIndicesCustomStatsRequest extends BaseNodeRequest {

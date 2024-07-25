@@ -27,7 +27,7 @@ public class HistogramStats implements Streamable, ToXContentFragment {
     private double tp999;
 
 
-    HistogramStats() {}
+    public HistogramStats() {}
 
     public HistogramStats(StreamInput in) throws IOException {
         avg = in.readDouble();
@@ -95,6 +95,34 @@ public class HistogramStats implements Streamable, ToXContentFragment {
         builder.field(HistogramFields.TP99, tp99);
         builder.field(HistogramFields.TP999, tp999);
         return builder;
+    }
+
+    public double getAvg() {
+        return avg;
+    }
+
+    public double getMedian() {
+        return median;
+    }
+
+    public double getMax() {
+        return max;
+    }
+
+    public double getMin() {
+        return min;
+    }
+
+    public double getTp90() {
+        return tp90;
+    }
+
+    public double getTp99() {
+        return tp99;
+    }
+
+    public double getTp999() {
+        return tp999;
     }
 
     @Override

@@ -71,13 +71,13 @@ public class NodesIndicesCustomStats extends BaseNodeResponse implements ToXCont
 
         builder.startObject("indices_custom_stats");
         if (stats != null) {
-            builder.startObject("indices");
-            stats.toXContent(builder, params);
+            //节点上所有索引的
+            builder.startObject("node_total");
+            stats.toXContentTotal(builder, params);
             builder.endObject();
 
-            builder.startObject("node_total");
-            //所有索引的
-            stats.toXContentTotal(builder, params);
+            builder.startObject("indices");
+            stats.toXContent(builder, params);
             builder.endObject();
         }
         builder.endObject();

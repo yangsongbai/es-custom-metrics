@@ -23,12 +23,12 @@ public class CustomBigDocService {
         return totalStats.stats(indices, all);
     }
 
-    public synchronized void initCounterMetric(String index) {
+    public synchronized void initMetric(String index) {
         totalStats.bigDocIndexGroup.putIfAbsent(index, new CounterMetric());
         totalStats.bigDocDeleteGroup.putIfAbsent(index, new CounterMetric());
     }
 
-    public synchronized void removeCounterMetric(String index) {
+    public synchronized void removeMetric(String index) {
         totalStats.bigDocIndexGroup.remove(index);
         totalStats.bigDocDeleteGroup.remove(index);
     }

@@ -39,14 +39,15 @@ public class NodeIndicesCustomStatsResponse extends BaseNodesResponse<NodesIndic
         builder.startObject("_all");
         IndicesCustomCommonStats indicesCustomCommonStatsTotal = getTotal();
         if (indicesCustomCommonStatsTotal != null) {
-            builder.startObject("indices");
-            //按索引统计
-            indicesCustomCommonStatsTotal.toXContent(builder, params);
-            builder.endObject();
 
             builder.startObject("cluster_total");
             //集群维度统计
             builder =  indicesCustomCommonStatsTotal.toXContentTotal(builder, params);
+            builder.endObject();
+
+            builder.startObject("indices");
+            //按索引统计
+            indicesCustomCommonStatsTotal.toXContent(builder, params);
             builder.endObject();
         }
         builder.endObject();
