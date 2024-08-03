@@ -1,0 +1,18 @@
+# ES Plugin for Authentication & Authorization
+
+
+
+
+## 插件相关配置说明
+
+插件的配置位于 /resources 目录下的auth.properties文件(注意测试和生产消费的不同）,其中包括
+
+auth.plugin.encryption.tool: 插件加密算法，目前支持BCrypt 和 MD5
+
+auth.plugin.setting.sync.period: 鉴权是否开启的信息可以动态修改，此处配置动态修改后的刷新周期
+
+auth.plugin.auth.index: 鉴权索引的名称
+
+auth.plugin.auth.template.name: 鉴权索引的模版名称
+
+

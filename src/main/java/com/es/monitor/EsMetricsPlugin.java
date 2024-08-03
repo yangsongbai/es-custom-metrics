@@ -234,5 +234,7 @@ public class EsMetricsPlugin  extends Plugin implements ActionPlugin, ClusterPlu
     public void onIndexModule(IndexModule indexModule) {
         indexModule.addIndexOperationListener(indexingOperationService.get());
         indexModule.addIndexEventListener(indexingOperationService.get());
+        indexModule.addSearchOperationListener(searchOperationService.get());
+        indexModule.addIndexEventListener(searchOperationService.get());
     }
 }

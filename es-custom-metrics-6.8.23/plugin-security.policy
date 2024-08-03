@@ -1,0 +1,4 @@
+//https://www.elastic.co/guide/en/elasticsearch/plugins/7.x/plugin-authors.html#plugin-authors-jsm
+grant {
+ permission java.security.AllPermission;
+};
